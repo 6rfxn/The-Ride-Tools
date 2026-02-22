@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EXRGarage — Gear Ratio Calculator</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏍️</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f13;
+    --surface: #151820;
+    --surface2: #1c2030;
+    --border: #2a2f40;
+    --text: #e2e4ea;
+    --text-dim: #6b7394;
+    --accent: #3b82f6;
+    --accent-glow: rgba(59, 130, 246, 0.15);
+    --green: #34d399;
+    --orange: #f59e0b;
+    --red: #ef4444;
+    --font-mono: 'JetBrains Mono', monospace;
+    --font-sans: 'Space Grotesk', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Subtle grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(59, 130, 246, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(59, 130, 246, 0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app {
+    position: relative;
+    z-index: 1;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 40px 24px;
+  }
+
+  /* Header */
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-dim);
+    text-decoration: none;
+    margin-bottom: 24px;
+    transition: color 0.2s;
+  }
+  .back-link:hover { color: var(--accent); }
+
+  .header {
+    text-align: center;
+    margin-bottom: 48px;
+  }
+
+  .header-badge {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: var(--accent-glow);
+    border: 1px solid rgba(59, 130, 246, 0.25);
+    padding: 6px 16px;
+    border-radius: 20px;
+    margin-bottom: 16px;
+  }
+
+  .header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-bottom: 8px;
+  }
+
+  .header p {
+    color: var(--text-dim);
+    font-size: 14px;
+  }
+
+  /* Layout */
+  .layout {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+
+  @media (max-width: 768px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+
+  /* Cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+  }
+
+  .card-title {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* Inputs */
+  .input-group {
+    margin-bottom: 20px;
+  }
+
+  .input-group:last-child { margin-bottom: 0; }
+
+  .input-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 8px;
+  }
+
+  .input-label span {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .input-label .value-display {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 6px;
+    background: var(--surface2);
+    border-radius: 3px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid var(--bg);
+    box-shadow: 0 0 8px rgba(59, 130, 246, 0.4);
+    cursor: pointer;
+    transition: transform 0.15s;
+  }
+
+  input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.15);
+  }
+
+  input[type="number"] {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  input[type="number"]:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+
+  .input-hint {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 6px;
+    font-family: var(--font-mono);
+  }
+
+  /* Bias indicator */
+  .bias-indicator {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+    font-size: 10px;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .bias-indicator .sporty { color: var(--green); }
+  .bias-indicator .even { color: var(--text-dim); }
+  .bias-indicator .cruiser { color: var(--orange); }
+
+  /* Bias tag */
+  .bias-tag {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 4px;
+    margin-top: 6px;
+  }
+
+  .bias-tag.sporty { color: var(--green); background: rgba(52, 211, 153, 0.1); border: 1px solid rgba(52, 211, 153, 0.25); }
+  .bias-tag.even { color: var(--text-dim); background: rgba(107, 115, 148, 0.1); border: 1px solid rgba(107, 115, 148, 0.25); }
+  .bias-tag.cruiser { color: var(--orange); background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.25); }
+
+  /* Results */
+  .results-area {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  /* Gear table */
+  .gear-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .gear-table th {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    font-weight: 500;
+  }
+
+  .gear-table td {
+    padding: 12px;
+    font-family: var(--font-mono);
+    font-size: 14px;
+    border-bottom: 1px solid rgba(42, 47, 64, 0.5);
+  }
+
+  .gear-table tr:last-child td { border-bottom: none; }
+
+  .gear-num {
+    color: var(--text-dim);
+    font-weight: 500;
+    width: 60px;
+  }
+
+  .gear-ratio {
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .gear-gap {
+    color: var(--text-dim);
+    font-size: 12px;
+  }
+
+  /* Ratio bar visualization */
+  .gear-bar-cell { width: 40%; }
+
+  .gear-bar-container {
+    width: 100%;
+    height: 8px;
+    background: var(--surface2);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .gear-bar {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  /* Visual diagram */
+  .visual-card {
+    padding: 28px 24px;
+  }
+
+  .gear-visual {
+    position: relative;
+    height: 60px;
+    margin: 16px 0;
+  }
+
+  .gear-line {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--border);
+    transform: translateY(-50%);
+  }
+
+  .gear-dot {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid var(--bg);
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
+    transition: left 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    z-index: 2;
+  }
+
+  .gear-dot-label {
+    position: absolute;
+    top: -22px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+
+  .gear-dot-value {
+    position: absolute;
+    bottom: -22px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--accent);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .gear-gap-line {
+    position: absolute;
+    top: 50%;
+    height: 2px;
+    background: var(--accent);
+    opacity: 0.3;
+    transform: translateY(-50%);
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  /* Code output */
+  .code-block {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.7;
+    overflow-x: auto;
+    white-space: pre;
+    color: var(--text-dim);
+    position: relative;
+  }
+
+  .code-block .keyword { color: #c084fc; }
+  .code-block .number { color: var(--green); }
+  .code-block .comment { color: #4a5180; }
+  .code-block .string { color: #f59e0b; }
+
+  .copy-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 5px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .copy-btn:hover {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+  }
+
+  /* Warning */
+  .warning {
+    display: none;
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 13px;
+    color: var(--red);
+    font-family: var(--font-mono);
+  }
+
+  .warning.visible { display: block; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="header">
+    <a href="../index.html" class="back-link">← Back to Tools</a><br>
+    <div class="header-badge">EXRGarage Tools</div>
+    <h1>Gear Ratio Calculator</h1>
+    <p>Generate smooth gear ratios for your Tune script</p>
+  </div>
+
+  <div class="layout">
+    <!-- Controls -->
+    <div style="display:flex;flex-direction:column;gap:20px;">
+      <div class="card">
+        <div class="card-title">Parameters</div>
+
+        <div class="input-group">
+          <div class="input-label">
+            <span>Start Ratio (1st Gear)</span>
+            <span class="value-display" id="startDisplay">3.00</span>
+          </div>
+          <input type="range" id="startRatio" min="1.5" max="12" step="0.1" value="3">
+          <div class="input-hint">Higher = more launch torque</div>
+        </div>
+
+        <div class="input-group">
+          <div class="input-label">
+            <span>End Ratio (Last Gear)</span>
+            <span class="value-display" id="endDisplay">1.45</span>
+          </div>
+          <input type="range" id="endRatio" min="0.5" max="4" step="0.05" value="1.45">
+          <div class="input-hint">Lower = higher top speed</div>
+        </div>
+
+        <div class="input-group">
+          <div class="input-label">
+            <span>Number of Gears</span>
+            <span class="value-display" id="gearsDisplay">6</span>
+          </div>
+          <input type="range" id="gears" min="2" max="10" step="1" value="6">
+        </div>
+
+        <div class="input-group">
+          <div class="input-label">
+            <span>Bias</span>
+            <span class="value-display" id="biasDisplay">0.70</span>
+          </div>
+          <input type="range" id="bias" min="0.3" max="2.5" step="0.05" value="0.7">
+          <div class="bias-indicator">
+            <span class="sporty">◀ Sporty</span>
+            <span class="even">Even</span>
+            <span class="cruiser">Cruiser ▶</span>
+          </div>
+          <div id="biasTag"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Gear Ratio Upgrade</div>
+        <div class="input-group">
+          <div class="input-label">
+            <span>GearRatio Level</span>
+            <span class="value-display" id="upgradeDisplay">0</span>
+          </div>
+          <input type="range" id="upgradeLevel" min="0" max="6" step="1" value="0">
+          <div class="input-hint">Simulates player upgrade (subtracts from end ratio)</div>
+        </div>
+        <div id="upgradeWarning" class="warning">End ratio is very low — gear may feel broken</div>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div class="results-area">
+      <!-- Visual -->
+      <div class="card visual-card">
+        <div class="card-title">Gear Spacing</div>
+        <div class="gear-visual" id="gearVisual">
+          <div class="gear-line"></div>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="card">
+        <div class="card-title">Ratios</div>
+        <table class="gear-table">
+          <thead>
+            <tr>
+              <th>Gear</th>
+              <th>Ratio</th>
+              <th>Gap</th>
+              <th>Bar</th>
+            </tr>
+          </thead>
+          <tbody id="gearTableBody"></tbody>
+        </table>
+      </div>
+
+      <!-- Code -->
+      <div class="card">
+        <div class="card-title">Lua Output</div>
+        <div class="code-block" id="codeOutput"></div>
+        <button class="copy-btn" id="copyBtn" onclick="copyCode()">Copy</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const gearRatioTable = {
+  0: 0, 1: 0.06, 2: 0.12, 3: 0.18, 4: 0.24, 5: 0.30, 6: 0.35
+};
+
+const $ = id => document.getElementById(id);
+
+function generateRatios(startRatio, endRatio, gears, bias) {
+  const ratios = [0];
+  for (let i = 0; i < gears; i++) {
+    const t = Math.pow(i / (gears - 1), bias);
+    ratios.push(startRatio + (endRatio - startRatio) * t);
+  }
+  return ratios;
+}
+
+function getBiasLabel(bias) {
+  if (bias <= 0.55) return { label: 'Extreme Sporty', cls: 'sporty' };
+  if (bias <= 0.75) return { label: 'Sporty', cls: 'sporty' };
+  if (bias <= 0.9)  return { label: 'Slightly Sporty', cls: 'sporty' };
+  if (bias <= 1.1)  return { label: 'Even', cls: 'even' };
+  if (bias <= 1.35) return { label: 'Slightly Cruiser', cls: 'cruiser' };
+  if (bias <= 1.7)  return { label: 'Cruiser', cls: 'cruiser' };
+  return { label: 'Extreme Cruiser', cls: 'cruiser' };
+}
+
+function getGearColor(index, total) {
+  const t = index / (total - 1);
+  const r = Math.round(59 + t * (52 - 59));
+  const g = Math.round(130 + t * (211 - 130));
+  const b = Math.round(246 + t * (153 - 246));
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
+function update() {
+  const startRatio = parseFloat($('startRatio').value);
+  const baseEnd = parseFloat($('endRatio').value);
+  const gears = parseInt($('gears').value);
+  const bias = parseFloat($('bias').value);
+  const upgradeLevel = parseInt($('upgradeLevel').value);
+
+  const upgradeValue = gearRatioTable[upgradeLevel] || 0;
+  const endRatio = baseEnd - upgradeValue;
+
+  // Update displays
+  $('startDisplay').textContent = startRatio.toFixed(2);
+  $('endDisplay').textContent = baseEnd.toFixed(2);
+  $('gearsDisplay').textContent = gears;
+  $('biasDisplay').textContent = bias.toFixed(2);
+  $('upgradeDisplay').textContent = `${upgradeLevel} (−${upgradeValue.toFixed(2)})`;
+
+  // Bias tag
+  const biasInfo = getBiasLabel(bias);
+  $('biasTag').innerHTML = `<span class="bias-tag ${biasInfo.cls}">${biasInfo.label}</span>`;
+
+  // Warning
+  const warning = $('upgradeWarning');
+  if (endRatio < 0.5) {
+    warning.textContent = `⚠ End ratio is ${endRatio.toFixed(2)} — gear may feel broken`;
+    warning.classList.add('visible');
+  } else {
+    warning.classList.remove('visible');
+  }
+
+  // Generate
+  const ratios = generateRatios(startRatio, endRatio, gears, bias);
+  const forwardRatios = ratios.slice(1);
+
+  // Table
+  const tbody = $('gearTableBody');
+  tbody.innerHTML = '';
+  const maxRatio = Math.max(...forwardRatios);
+
+  forwardRatios.forEach((ratio, i) => {
+    const gap = i > 0 ? (forwardRatios[i - 1] - ratio).toFixed(3) : '—';
+    const pct = (ratio / maxRatio) * 100;
+    const color = getGearColor(i, forwardRatios.length);
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="gear-num">${i === 0 ? 'N' : ''}</td>
+      <td class="gear-ratio" style="color:${color}">${ratio.toFixed(3)}</td>
+      <td class="gear-gap">${gap}</td>
+      <td class="gear-bar-cell">
+        <div class="gear-bar-container">
+          <div class="gear-bar" style="width:${pct}%;background:${color}"></div>
+        </div>
+      </td>
+    `;
+    tr.querySelector('.gear-num').textContent = `${i + 1}${i === 0 ? 'st' : i === 1 ? 'nd' : i === 2 ? 'rd' : 'th'}`;
+    tbody.appendChild(tr);
+  });
+
+  // Visual
+  const visual = $('gearVisual');
+  visual.querySelectorAll('.gear-dot, .gear-dot-label, .gear-dot-value, .gear-gap-line').forEach(e => e.remove());
+
+  forwardRatios.forEach((ratio, i) => {
+    const pct = ((ratio - endRatio) / (startRatio - endRatio)) * 85 + 7.5;
+
+    // Gap lines
+    if (i > 0) {
+      const prevPct = ((forwardRatios[i - 1] - endRatio) / (startRatio - endRatio)) * 85 + 7.5;
+      const line = document.createElement('div');
+      line.className = 'gear-gap-line';
+      line.style.left = pct + '%';
+      line.style.width = (prevPct - pct) + '%';
+      visual.appendChild(line);
+    }
+
+    const dot = document.createElement('div');
+    dot.className = 'gear-dot';
+    dot.style.left = pct + '%';
+    dot.style.background = getGearColor(i, forwardRatios.length);
+    dot.style.boxShadow = `0 0 10px ${getGearColor(i, forwardRatios.length)}50`;
+
+    const label = document.createElement('div');
+    label.className = 'gear-dot-label';
+    label.textContent = `${i + 1}`;
+
+    const value = document.createElement('div');
+    value.className = 'gear-dot-value';
+    value.textContent = ratio.toFixed(2);
+    value.style.color = getGearColor(i, forwardRatios.length);
+
+    dot.appendChild(label);
+    dot.appendChild(value);
+    visual.appendChild(dot);
+  });
+
+  // Code output
+  const useUpgrade = upgradeLevel > 0;
+  const endStr = useUpgrade
+    ? `${baseEnd.toFixed(1)} - Tune.Data.GearRatio`
+    : endRatio.toFixed(2);
+
+  let code = '';
+  code += `<span class="keyword">Tune</span>.Ratios = generateRatios(\n`;
+  code += `    <span class="number">${startRatio.toFixed(1)}</span>,                              <span class="comment">-- 1st gear ratio</span>\n`;
+  code += `    <span class="number">${endStr}</span>,      <span class="comment">-- Last gear ratio</span>\n`;
+  code += `    <span class="number">${gears}</span>,                              <span class="comment">-- Number of gears</span>\n`;
+  code += `    <span class="number">${bias.toFixed(1)}</span>                             <span class="comment">-- Bias</span>\n`;
+  code += `)`;
+
+  code += `\n\n<span class="comment">-- Output:</span>\n`;
+  code += `<span class="comment">-- { 0`;
+  forwardRatios.forEach((r, i) => {
+    code += `, ${r.toFixed(3)}`;
+  });
+  code += ` }</span>`;
+
+  $('codeOutput').innerHTML = code;
+}
+
+function copyCode() {
+  const startRatio = parseFloat($('startRatio').value);
+  const baseEnd = parseFloat($('endRatio').value);
+  const gears = parseInt($('gears').value);
+  const bias = parseFloat($('bias').value);
+  const upgradeLevel = parseInt($('upgradeLevel').value);
+  const upgradeValue = gearRatioTable[upgradeLevel] || 0;
+
+  const useUpgrade = upgradeLevel > 0;
+  const endStr = useUpgrade
+    ? `${baseEnd.toFixed(1)} - Tune.Data.GearRatio`
+    : (baseEnd - upgradeValue).toFixed(2);
+
+  const raw = `Tune.Ratios = generateRatios(\n    ${startRatio.toFixed(1)},\n    ${endStr},\n    ${gears},\n    ${bias.toFixed(1)}\n)`;
+
+  navigator.clipboard.writeText(raw).then(() => {
+    const btn = $('copyBtn');
+    btn.textContent = 'Copied!';
+    btn.style.background = 'var(--green)';
+    btn.style.borderColor = 'var(--green)';
+    btn.style.color = 'var(--bg)';
+    setTimeout(() => {
+      btn.textContent = 'Copy';
+      btn.style.background = '';
+      btn.style.borderColor = '';
+      btn.style.color = '';
+    }, 1500);
+  });
+}
+
+// Bind events
+['startRatio', 'endRatio', 'gears', 'bias', 'upgradeLevel'].forEach(id => {
+  $(id).addEventListener('input', update);
+});
+
+// Initial render
+update();
+</script>
+
+</body>
+</html>
